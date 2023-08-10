@@ -2,9 +2,9 @@
 본 레포지토리는 2023 국립국어원 인공 지능 언어 능력 평가 중 이야기 완성 과제 베이스라인 모델의 재현을 위한 소스 코드를 포함하고 있습니다.
 
 ### Baseline
-|Model|ROUGE-1|BLUERT|BERT Score|
+|Model|ROUGE-1|BLUE|BLUERT|BERT Score|
 |:---:|---|---|---|---|
-|KoBART (v2)|0.325|0.730|0.763|
+|KoBART (v2)|0.323|0.328|0.386|0.762|
 
 ## Directory Structure
 ```
