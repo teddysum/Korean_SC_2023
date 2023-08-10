@@ -5,6 +5,7 @@
 |Model|ROUGE-1|BLUE|BLUERT|BERT Score|
 |:---:|---|---|---|---|
 |KoBART (v2)|0.323|0.328|0.386|0.762|
+평가 코드 : https://github.com/teddysum/korean_evaluation.git
 
 ## Directory Structure
 ```
@@ -63,7 +64,7 @@ python -m run train \
     --wandb-project <wandb-project-name>
 ```
 
-### 추론Inference
+### Inference
 ```
 python -m run inference \
     --model-ckpt-path outputs/sc/<your-model-ckpt-path> \
