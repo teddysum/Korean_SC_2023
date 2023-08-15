@@ -29,7 +29,14 @@ src
 
 ## Data Format
 ```
-{"id": "nikluge-2023-sc-dev-000001", "input": {"sentence1": "그는 거실에서 영화를 보다 잠들었다.", "sentence3": "그는 형이 깨워줘서 겨우 방에 들어가 다시 잤다."}, "output": "그 모습을 본 형이 그를 깨웠다."}
+{
+    "id": "nikluge-2023-sc-dev-000001",
+    "input": {
+        "sentence1": "그는 거실에서 영화를 보다 잠들었다.",
+        "sentence3": "그는 형이 깨워줘서 겨우 방에 들어가 다시 잤다."
+    },
+    "output": "그 모습을 본 형이 그를 깨웠다."
+}
 ```
 
 ### Enviroments
