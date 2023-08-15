@@ -58,11 +58,15 @@ Install MeCab
 ```
 python -m run train \
     --output-dir outputs/sc \
-    --seed 42 --epoch 10 --gpus 2 --warmup-rate 0.1 \
-    --max-learning-rate 2e-4 --min-learning-rate 1e-5 \
-    --batch-size=6 --valid-batch-size=6 \
-    --logging-interval 100 --evaluate-interval 1 \
-    --wandb-project <wandb-project-name>
+    --model-path gogamza/kobart-base-v2 \
+    --tokenizer gogamza/kobart-base-v2 \
+    --gpus 0 1 --epoch 5 \
+    --max-learning-rate 2e-5 --min-learning-rate 1e-6 \
+    --warmup-rate 0.1 --r3f-lambda 0.1 \
+    --max-seq-len 512 \
+    --batch-size-train 12 --batch-size-valid 12 \
+    --logging-interval 100 --evaluate-interval 1.0 \
+    --seed 93 --wandb-project SC
 ```
 
 ### Inference

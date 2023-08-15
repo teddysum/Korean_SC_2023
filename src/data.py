@@ -12,7 +12,7 @@ def StoryDataLoader(fname, tokenizer, batch_size, max_length, mode="train"):
 
     """
 
-    dataset = Dataset.from_json(fname, mode)
+    dataset = Dataset.from_json(fname)
 
     if not tokenizer.cls_token:
         tokenizer.cls_token = tokenizer.bos_token
@@ -27,14 +27,14 @@ def StoryDataLoader(fname, tokenizer, batch_size, max_length, mode="train"):
 
     def preprocess_function(examples):
         processed = {}
+        inp = f'{examples["input"]["sentence1"]} {tokenizer.sep_token} {examples["input"]["sentence3"]}'
         tokenizer_input = tokenizer(
-            examples["input"]["sentence1"],
-            examples["input"]["sentence3"],
+            inp,
             padding="max_length",
             max_length=max_length,
             truncation=True
         )
-        processed["input_ids"] = tokenizer_input["input_ids"],
+        processed["input_ids"] = tokenizer_input["input_ids"]
         processed["attention_mask"] = tokenizer_input["attention_mask"]
 
         if mode == "train":
@@ -51,9 +51,10 @@ def StoryDataLoader(fname, tokenizer, batch_size, max_length, mode="train"):
 
     dataset = dataset.map(
         preprocess_function,
+        num_proc=8,
         remove_columns=dataset.column_names
     ).with_format("torch")
-    dataloader = DataLoader(dataset, shuffle=(True if mode=="train" else False), batch_size=batch_size)
+    dataloader = DataLoader(dataset, shuffle=(True if mode=="train" else False), batch_size=batch_size, num_workers=8, pin_memory=True)
 
     return dataloader
 

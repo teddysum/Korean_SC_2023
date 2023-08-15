@@ -18,17 +18,18 @@ g = parser.add_argument_group("Common Parameter")
 g.add_argument("--output-dir", type=str, required=True, help="output directory path to save artifacts")
 g.add_argument("--model-path", type=str, default="gogamza/kobart-base-v2", help="model file path")
 g.add_argument("--tokenizer", type=str, default="gogamza/kobart-base-v2", help="huggingface tokenizer path")
-g.add_argument("--batch-size", type=int, default=32, help="training batch size")
-g.add_argument("--valid-batch-size", type=int, default=64, help="validation batch size")
-parser.add_argument("--max-seq-len", type=int, default=512, help="max sequence length")
-g.add_argument("--accumulate-grad-batches", type=int, default=1, help=" the number of gradident accumulation steps")
+g.add_argument("--gpus", nargs='+', type=int, required=True, help="the number of gpus")
 g.add_argument("--epochs", type=int, default=10, help="the numnber of training epochs")
 g.add_argument("--max-learning-rate", type=float, default=2e-4, help="max learning rate")
 g.add_argument("--min-learning-rate", type=float, default=1e-5, help="min Learning rate")
 g.add_argument("--warmup-rate", type=float, default=0.1, help="warmup step rate")
-g.add_argument("--gpus", type=int, default=0, help="the number of gpus")
+g.add_argument("--r3f-lambda", type=float, default=0.1, help="r3f lambda")
+g.add_argument("--max-seq-len", type=int, default=512, help="max sequence length")
+g.add_argument("--batch-size-train", type=int, required=True, help="training batch size")
+g.add_argument("--batch-size-valid", type=int, required=True, help="validation batch size")
 g.add_argument("--logging-interval", type=int, default=100, help="logging interval")
-g.add_argument("--evaluate-interval", type=int, default=500, help="validation interval")
+g.add_argument("--evaluate-interval", type=float, default=1.0, help="validation interval")
+g.add_argument("--accumulate-grad-batches", type=int, default=1, help=" the number of gradident accumulation steps")
 g.add_argument("--seed", type=int, default=42, help="random seed")
 
 g = parser.add_argument_group("Wandb Options")
@@ -41,7 +42,7 @@ g.add_argument("--wandb-project", type=str, help="wanDB project name")
 def main(args):
     logger = get_logger("train")
 
-    os.makedirs(args.output_dir)
+    os.makedirs(args.output_dir, exist_ok=True)
     logger.info(f'[+] Save output to "{args.output_dir}"')
 
     logger.info(" ====== Arguements ======")
@@ -57,22 +58,21 @@ def main(args):
     tokenizer = AutoTokenizer.from_pretrained(args.tokenizer)
 
     logger.info(f'[+] Load Dataset')
-    train_dataloader = StoryDataLoader("resource/data/nikluge-sc-2023-train.jsonl", tokenizer, args.batch_size, args.max_seq_len)
-    valid_dataloader = StoryDataLoader("resource/data/nikluge-sc-2023-dev.jsonl", tokenizer, args.valid_batch_size, args.max_seq_len)
-    total_steps = len(train_dataloader) * args.epochs
+    train_dataloader = StoryDataLoader("resource/data/nikluge-sc-2023-train.jsonl", tokenizer, args.batch_size_train, args.max_seq_len)
+    valid_dataloader = StoryDataLoader("resource/data/nikluge-sc-2023-dev.jsonl", tokenizer, args.batch_size_valid, args.max_seq_len)
+    total_steps = len(train_dataloader) * args.epochs // len(args.gpus)
 
-    if args.model_path:
-        logger.info(f'[+] Load Model from "{args.model_path}"')
-        model = BartForConditionalGeneration.from_pretrained(args.model_path)
+    logger.info(f'[+] Load Model from "{args.model_path}"')
+    model = BartForConditionalGeneration.from_pretrained(args.model_path)
 
     logger.info(f"[+] Load Pytorch Lightning Module")
     lightning_module = StoryModule(
         model,
+        args.output_dir,
         total_steps,
         args.max_learning_rate,
         args.min_learning_rate,
         args.warmup_rate,
-        args.output_dir
     )
 
     logger.info(f"[+] Start Training")
@@ -87,17 +87,20 @@ def main(args):
             )
         )
     
-    # If evaluate_interval passed float F, check validation set 1/F times during a training epoch
+    # pass a float in the range [0.0, 1.0] to check after a fraction of the training epoch.
+    # pass an int to check after a fixed number of training batches.
     if args.evaluate_interval == 1:
         args.evaluate_interval = 1.0
     trainer = pl.Trainer(
+        strategy="auto",
+        accelerator="gpu",
         logger=train_loggers,
         max_epochs=args.epochs,
         log_every_n_steps=args.logging_interval,
         val_check_interval=args.evaluate_interval,
         accumulate_grad_batches=args.accumulate_grad_batches,
         callbacks=[LearningRateMonitor(logging_interval="step")],
-        gpus=args.gpus,
+        devices=args.gpus,
     )
     trainer.fit(lightning_module, train_dataloader, valid_dataloader)
 

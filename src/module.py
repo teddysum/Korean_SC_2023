@@ -1,13 +1,10 @@
 
 import os
 
-import pytorch_lightning as pl
 import torch
+import pytorch_lightning as pl
 import torch.nn.functional as F
-import torchmetrics
 from torch.optim.lr_scheduler import CyclicLR
-from transformers import BartForConditionalGeneration
-
 
 
 class StoryModule(pl.LightningModule):
@@ -19,16 +16,18 @@ class StoryModule(pl.LightningModule):
         min_learning_rate: Min LR
         warmup_rate: warmup step rate
         model_save_dir: path to save model
+        r3f_lambda: R3F parameter
     """
 
     def __init__(
         self,
-        model: BartForConditionalGeneration,
-        total_steps: int,
-        max_learning_rate: float,
-        min_learning_rate: float,
-        warmup_rate: float,
-        model_save_dir: str,
+        model,
+        model_save_dir,
+        total_steps,
+        max_learning_rate: float = 2e-4,
+        min_learning_rate: float = 2e-5,
+        warmup_rate: float = 0.1,
+        r3f_lambda: float = 0.1
     ):
         super().__init__()
 
@@ -38,6 +37,8 @@ class StoryModule(pl.LightningModule):
         self.min_learning_rate = min_learning_rate
         self.warmup_rate = warmup_rate
         self.model_save_dir = model_save_dir
+        self.r3f_lambda = r3f_lambda
+        self.validation_step_loss = []
 
         self.save_hyperparameters(
             {
@@ -46,6 +47,7 @@ class StoryModule(pl.LightningModule):
                 "max_learning_rate": self.max_learning_rate,
                 "min_learning_rate": self.min_learning_rate,
                 "warmup_rate": self.warmup_rate,
+                "r3f_lambda": self.r3f_lambda,
             }
         )
 
@@ -62,9 +64,7 @@ class StoryModule(pl.LightningModule):
         logits = output["logits"][:, :-1].reshape([labels.shape[0], -1])
 
         loss = F.cross_entropy(logits, labels, ignore_index=self.model.config.pad_token_id)
-        accuracy = torchmetrics.functional.accuracy(logits, labels, ignore_index=self.model.config.pad_token_id)
-
-        metrics = {"loss": loss, "acc": accuracy}
+        metrics = {"loss": loss}
         self.log_dict(metrics, prog_bar=True, logger=True, on_step=True)
 
         return metrics
@@ -82,9 +82,14 @@ class StoryModule(pl.LightningModule):
         logits = output["logits"][:, :-1].reshape([labels.shape[0], -1])
 
         loss = F.cross_entropy(logits, labels, ignore_index=self.model.config.pad_token_id)
-        accuracy = torchmetrics.functional.accuracy(logits, labels, ignore_index=self.model.config.pad_token_id)
+        metrics = {"loss(v)": loss}
+        self.validation_step_loss.append(loss)
 
-        metrics = {"val_loss": loss, "val_acc": accuracy}
+        # metrics["accuracy(v)"] = accuracy(logits,
+        #                                   labels,
+        #                                   task="multiclass",
+        #                                   ignore_index=self.model.config.pad_token_id)
+        
         self.log_dict(metrics, prog_bar=True, logger=True, on_epoch=True)
 
         return metrics
@@ -106,22 +111,23 @@ class StoryModule(pl.LightningModule):
 
         return {
             "optimizer": optimizer,
-            "lr_scheduler": {"scheduler": scheduler, "interval": "step", "name": "Learning Rate"},
+            "lr_scheduler": {
+                "scheduler": scheduler,
+                "interval": "step",
+                "name": "Learning Rate"
+            },
         }
 
-    def validation_epoch_end(self, outputs):
-        outputs = self.all_gather(outputs)
-
+    def on_validation_epoch_end(self):
         if self.trainer.is_global_zero:
-            val_losses = [output["val_loss"].mean() for output in outputs]
-            val_accs = [output["val_acc"].mean() for output in outputs]
-
-            val_loss_mean = sum(val_losses) / len(val_losses)
-            val_acc_mean = sum(val_accs) / len(val_accs)
+            losses = [output.mean() for output in self.validation_step_loss]
+            loss_mean = sum(losses) / len(losses)
 
             self.model.save_pretrained(
                 os.path.join(
                     self.model_save_dir,
-                    f"model-{self.current_epoch:02d}epoch-{self.global_step}steps-{val_loss_mean:.4f}loss-{val_acc_mean:.4f}acc",
+                    f"model-{self.current_epoch:02d}epoch-{self.global_step}steps-{loss_mean:.4f}loss",
                 ),
             )
+
+        self.validation_step_loss.clear()  # free memory

@@ -13,8 +13,6 @@ if command == "train":
     from .train import main, parser
 elif command == "inference":
     from .inference import main, parser
-elif command == "scoring":
-    from .scoring import main, parser
 else:
     print(f'[-] Please type command in ("train", "inference")', file=sys.stderr)
     exit(-1)

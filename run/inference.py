@@ -32,7 +32,7 @@ def main(args):
     tokenizer = AutoTokenizer.from_pretrained(args.tokenizer)
 
     logger.info(f'[+] Load Dataset')
-    dataloader = StoryDataLoader("resource/data/nikluge-sc-2023-test-answer.jsonl", tokenizer=tokenizer, batch_size=args.batch_size, max_length=args.max_seq_len, mode="infer")
+    dataloader = StoryDataLoader("resource/data/nikluge-sc-2023-test.jsonl", tokenizer=tokenizer, batch_size=args.batch_size, max_length=args.max_seq_len, mode="infer")
 
     logger.info(f'[+] Load Model from "{args.model_ckpt_path}"')
     model = BartForConditionalGeneration.from_pretrained(args.model_ckpt_path)
@@ -47,7 +47,6 @@ def main(args):
     for batch in tqdm(dataloader):
         dialoge_input = batch["input_ids"].to(device)
         attention_mask = batch["attention_mask"].to(device)
-        print(dialoge_input)
 
         summary_tokens = model.generate(
             dialoge_input,
@@ -58,14 +57,13 @@ def main(args):
             bos_token_id=tokenizer.bos_token_id,
             eos_token_id=tokenizer.eos_token_id,
             num_beams=args.num_beams,
-            use_cache=True,
         )
         total_summary_tokens.extend(summary_tokens.cpu().detach().tolist())
 
     logger.info("[+] Start Decoding")
     decoded = [tokenizer.decode(tokens, skip_special_tokens=True) for tokens in tqdm(total_summary_tokens)]
     
-    j_list = jsonlload("resource/data/nikluge-sc-2023-test-answer.jsonl")
+    j_list = jsonlload("resource/data/nikluge-sc-2023-test.jsonl")
     for idx, oup in enumerate(decoded):
         j_list[idx]["output"] = oup
 
