@@ -47,7 +47,7 @@ docker pull nvcr.io/nvidia/pytorch:22.08-py3
 
 Docker Run Script
 ```
-docker run -dit --gpus all --shm-size=8G --name baseline_sa nvcr.io/nvidia/pytorch:23.05-py3
+docker run -dit --gpus all --shm-size=8G --name baseline_sa nvcr.io/nvidia/pytorch:22.08-py3
 ```
 
 Install Python Dependency
