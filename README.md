@@ -1,5 +1,5 @@
 # 이야기 완성 Baseline
-본 레포지토리는 2023 국립국어원 인공 지능 언어 능력 평가 중 이야기 완성 과제 베이스라인 모델의 재현을 위한 소스 코드를 포함하고 있습니다.
+본 레포지토리는 2023 국립국어원 인공지능의 한국어 능력 평가 중 이야기 완성 과제 베이스라인 모델의 재현을 위한 소스 코드를 포함하고 있습니다.
 
 ### Baseline
 |Model|ROUGE-1|BLUE|BLUERT|BERT Score|
@@ -90,6 +90,6 @@ python -m run inference \
 ```
 
 ## Reference
-국립국어원 모두의말뭉치 (https://corpus.korean.go.kr/)  
+국립국어원 인공지능 (AI)말평 (https://kli.korean.go.kr/benchmark)  
 transformers (https://github.com/huggingface/transformers)  
 KoBART (v2) (https://huggingface.co/gogamza/kobart-base-v2)  
