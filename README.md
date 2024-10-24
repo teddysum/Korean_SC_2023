@@ -3,11 +3,16 @@
 
 
 학습, 추론의 실행 방법(How to Run)은 아래에서 확인하실 수 있습니다.
+
 ### Baseline
+|Model|ROUGE-1|
+|:---:|---|
+|KoBART (v2)|0.323|
+<!--
 |Model|ROUGE-1|BLUE|BLUERT|BERT Score|
 |:---:|---|---|---|---|
 |KoBART (v2)|0.323|0.328|0.386|0.762|
-
+-->
 평가 코드 : https://github.com/teddysum/korean_evaluation.git
 
 ## Directory Structure
