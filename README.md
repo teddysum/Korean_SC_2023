@@ -7,11 +7,11 @@
 ### Baseline
 |Model|ROUGE-1|
 |:---:|---|
-|KoBART (v2)|0.323|
+|KoBART (v2)|0.322|
 <!--
 |Model|ROUGE-1|BLUE|BLUERT|BERT Score|
 |:---:|---|---|---|---|
-|KoBART (v2)|0.323|0.328|0.386|0.762|
+|KoBART (v2)|0.322|0.328|0.386|0.762|
 -->
 평가 코드 : https://github.com/teddysum/korean_evaluation.git
 
